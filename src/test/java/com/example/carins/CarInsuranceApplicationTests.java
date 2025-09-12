@@ -1,6 +1,6 @@
 package com.example.carins;
 
-import com.example.carins.service.CarService;
+import com.example.carins.service.Impl.CarServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CarInsuranceApplicationTests {
 
     @Autowired
-    CarService service;
+    CarServiceImpl service;
 
     @Test
     void insuranceValidityBasic() {
