@@ -3,7 +3,7 @@ package com.example.carins.web.dto;
 import java.util.List;
 
 public record CarHistoryResponse(
-        long carId,
+        Long carId,
         List<CarEventDto> events
 ) {
 }

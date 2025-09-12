@@ -9,6 +9,7 @@ import com.example.carins.repo.InsurancePolicyRepository;
 import com.example.carins.service.CarHistoryService;
 import com.example.carins.web.dto.*;
 
+import com.example.carins.web.enums.CarEventType;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,13 +41,13 @@ public class CarHistoryServiceImpl implements CarHistoryService {
 
         for (InsurancePolicy p : policyRepo.findByCarId(carId)) {
             events.add(new CarEventDto(
-                    "POLICY_START",
+                    CarEventType.POLICY_START,
                     p.getStartDate(),
                     "Policy started (" + p.getProvider() + ")",
                     null
             ));
             events.add(new CarEventDto(
-                    "POLICY_END",
+                    CarEventType.POLICY_END,
                     p.getEndDate(),
                     "Policy ended (" + p.getProvider() + ")",
                     null
@@ -55,7 +56,7 @@ public class CarHistoryServiceImpl implements CarHistoryService {
 
         for (InsuranceClaim c : claimRepo.findByCarIdOrderByClaimDateAsc(carId)) {
             events.add(new CarEventDto(
-                    "CLAIM",
+                    CarEventType.CLAIM,
                     c.getClaimDate(),
                     c.getDescription(),
                     c.getAmount()
