@@ -10,6 +10,8 @@ import com.example.carins.service.InsuranceClaimService;
 import com.example.carins.web.dto.InsuranceClaimRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class InsuranceClaimServiceImpl implements InsuranceClaimService {
     private final InsuranceClaimRepository claimRepo;
@@ -30,4 +32,11 @@ public class InsuranceClaimServiceImpl implements InsuranceClaimService {
         var claim = new InsuranceClaim(car, dto.claimDate(), dto.description(), dto.amount());
         return claimRepo.save(claim);
     }
+
+    @Override
+    public List<InsuranceClaim> findByCarId(Long carId) {
+        carValidator.getExistingCarOrThrow(carId);
+        return claimRepo.findByCarIdOrderByClaimDateAsc(carId);
+    }
+
 }

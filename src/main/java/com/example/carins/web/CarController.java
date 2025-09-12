@@ -7,10 +7,7 @@ import com.example.carins.service.CarService;
 import com.example.carins.service.DateParserService;
 import com.example.carins.service.InsuranceClaimService;
 import com.example.carins.service.InsurancePolicyService;
-import com.example.carins.web.dto.CarDto;
-import com.example.carins.web.dto.InsuranceClaimRequest;
-import com.example.carins.web.dto.InsuranceClaimResponse;
-import com.example.carins.web.dto.InsuranceValidityResponse;
+import com.example.carins.web.dto.*;
 import com.example.carins.web.util.LocationBuilder;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -72,5 +69,14 @@ public class CarController {
         var body = insuranceClaimMapper.toResponse(claim);
         URI location = locationBuilder.forClaim(claim.getId());
         return ResponseEntity.created(location).body(body);
+    }
+
+    @GetMapping("/cars/{carId}/claims")
+    public ResponseEntity<List<InsuranceClaimResponse>> getClaims(@PathVariable Long carId) {
+        var claims = insuranceClaimService.findByCarId(carId)
+                .stream()
+                .map(insuranceClaimMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(claims);
     }
 }
