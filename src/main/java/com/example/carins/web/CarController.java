@@ -3,10 +3,7 @@ package com.example.carins.web;
 import com.example.carins.Exception.InvalidDateException;
 import com.example.carins.mapper.CarMapper;
 import com.example.carins.mapper.InsuranceClaimMapper;
-import com.example.carins.service.CarService;
-import com.example.carins.service.DateParserService;
-import com.example.carins.service.InsuranceClaimService;
-import com.example.carins.service.InsurancePolicyService;
+import com.example.carins.service.*;
 import com.example.carins.web.dto.*;
 import com.example.carins.web.util.LocationBuilder;
 import jakarta.validation.Valid;
@@ -28,6 +25,7 @@ public class CarController {
     private final InsuranceClaimMapper insuranceClaimMapper;
     private final DateParserService dateParserService;
     private final LocationBuilder locationBuilder;
+    private final CarHistoryService carHistoryService;
 
     public CarController(CarService carService,
                          InsurancePolicyService insurancePolicyService,
@@ -35,7 +33,8 @@ public class CarController {
                          CarMapper carMapper,
                          InsuranceClaimMapper claimMapper,
                          DateParserService dateParser,
-                         LocationBuilder locationBuilder) {
+                         LocationBuilder locationBuilder,
+                         CarHistoryService carHistoryService) {
         this.carService = carService;
         this.insurancePolicyService = insurancePolicyService;
         this.carMapper = carMapper;
@@ -43,6 +42,7 @@ public class CarController {
         this.insuranceClaimMapper = claimMapper;
         this.dateParserService = dateParser;
         this.locationBuilder = locationBuilder;
+        this.carHistoryService = carHistoryService;
     }
 
     @GetMapping("/cars")
@@ -79,4 +79,11 @@ public class CarController {
                 .toList();
         return ResponseEntity.ok(claims);
     }
+
+    @GetMapping("/cars/{carId}/history")
+    public ResponseEntity<CarHistoryResponse> getCarHistory(@PathVariable Long carId) {
+        var resp = carHistoryService.getHistory(carId);
+        return ResponseEntity.ok(resp);
+    }
+
 }
