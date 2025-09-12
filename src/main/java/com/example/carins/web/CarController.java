@@ -2,16 +2,21 @@ package com.example.carins.web;
 
 import com.example.carins.Exception.InvalidDateException;
 import com.example.carins.mapper.CarMapper;
-import com.example.carins.model.Car;
-import com.example.carins.service.Impl.CarServiceImpl;
+import com.example.carins.mapper.InsuranceClaimMapper;
+import com.example.carins.service.CarService;
+import com.example.carins.service.DateParserService;
+import com.example.carins.service.InsuranceClaimService;
 import com.example.carins.service.InsurancePolicyService;
 import com.example.carins.web.dto.CarDto;
+import com.example.carins.web.dto.InsuranceClaimRequest;
+import com.example.carins.web.dto.InsuranceClaimResponse;
 import com.example.carins.web.dto.InsuranceValidityResponse;
-import org.springframework.http.HttpStatus;
+import com.example.carins.web.util.LocationBuilder;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -20,18 +25,32 @@ import java.util.List;
 public class CarController {
 
     private final InsurancePolicyService insurancePolicyService;
-    private final CarServiceImpl service;
+    private final InsuranceClaimService  insuranceClaimService;
+    private final CarService carService;
     private final CarMapper carMapper;
+    private final InsuranceClaimMapper insuranceClaimMapper;
+    private final DateParserService dateParserService;
+    private final LocationBuilder locationBuilder;
 
-    public CarController(CarServiceImpl service,  InsurancePolicyService insurancePolicyService,  CarMapper carMapper) {
-        this.service = service;
+    public CarController(CarService carService,
+                         InsurancePolicyService insurancePolicyService,
+                         InsuranceClaimService insuranceClaimService,
+                         CarMapper carMapper,
+                         InsuranceClaimMapper claimMapper,
+                         DateParserService dateParser,
+                         LocationBuilder locationBuilder) {
+        this.carService = carService;
         this.insurancePolicyService = insurancePolicyService;
         this.carMapper = carMapper;
+        this.insuranceClaimService = insuranceClaimService;
+        this.insuranceClaimMapper = claimMapper;
+        this.dateParserService = dateParser;
+        this.locationBuilder = locationBuilder;
     }
 
     @GetMapping("/cars")
     public List<CarDto> getCars() {
-        return service.listCars().stream().map(carMapper::toDto).toList();
+        return carService.listCars().stream().map(carMapper::toDto).toList();
     }
 
     @GetMapping("/cars/{carId}/insurance-valid")
@@ -39,17 +58,19 @@ public class CarController {
             @PathVariable Long carId,
             @RequestParam String date)
     {
-        LocalDate parsedDate;
-        try {
-            parsedDate = LocalDate.parse(date);
-        } catch (Exception e) {
-            throw new InvalidDateException("Date must be in format YYYY-MM-DD");
-        }
-        if (parsedDate.isBefore(LocalDate.of(1900,1,1)) ||
-                parsedDate.isAfter(LocalDate.of(2100,12,31))) {
-            throw new InvalidDateException("Date out of supported range");
-        }
+        LocalDate parsedDate = dateParserService.parseAndValidate(date);
         boolean valid = insurancePolicyService.isInsuranceValid(carId, parsedDate);
         return ResponseEntity.ok(new InsuranceValidityResponse(carId, parsedDate.toString(), valid));
+    }
+
+    @PostMapping("/cars/{carId}/claims")
+    public ResponseEntity<InsuranceClaimResponse> createClaim(
+            @PathVariable Long carId,
+            @Valid @RequestBody InsuranceClaimRequest request) {
+
+        var claim = insuranceClaimService.create(carId, request);
+        var body = insuranceClaimMapper.toResponse(claim);
+        URI location = locationBuilder.forClaim(claim.getId());
+        return ResponseEntity.created(location).body(body);
     }
 }

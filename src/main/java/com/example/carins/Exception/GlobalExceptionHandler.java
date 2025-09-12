@@ -20,6 +20,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalidDate(InvalidDateException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        var first = ex.getBindingResult().getFieldErrors().stream().findFirst();
+        String message = first.map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .orElse("Validation error");
+        return buildResponse(HttpStatus.BAD_REQUEST, message);
+    }
 
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
