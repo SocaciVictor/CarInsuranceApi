@@ -10,21 +10,25 @@
 ## 2) How to Run
 
 Default ports and tools:
+
 - API base URL: `http://localhost:8080`
 
 ### Sample requests
 
 List cars with owners:
+
 ```bash
 curl http://localhost:8080/api/cars
 ```
 
 Check insurance validity (returns `{"carId":1,"date":"2025-01-01","valid":true|false}`):
+
 ```bash
 curl "http://localhost:8080/api/cars/1/insurance-valid?date=2025-06-01"
 ```
 
 Run tests:
+
 ```bash
 mvn -q -DskipTests=false test
 ```
@@ -38,18 +42,20 @@ The API manages **car insurance** information. Core concepts:
 - **InsurancePolicy** — a policy attached to a specific car and valid within a date interval `[startDate, endDate]` (inclusive). At most one policy may be **active** on a given date for a given car (not enforced yet).
 
 Implemented features:
+
 - List all cars with their owners.
 - Check if a policy is active for a car on a given date.
-
 
 ## 4) Database Tables (Current & Proposed)
 
 **OWNER**
+
 - `ID` (BIGINT, PK, auto)
 - `NAME` (VARCHAR, not null)
 - `EMAIL` (VARCHAR, nullable)
 
 **CAR**
+
 - `ID` (BIGINT, PK, auto)
 - `VIN` (VARCHAR, not null)
 - `MAKE` (VARCHAR, null ok)
@@ -58,6 +64,7 @@ Implemented features:
 - `OWNER_ID` (BIGINT, FK → OWNER.ID, not null)
 
 **INSURANCEPOLICY**
+
 - `ID` (BIGINT, PK, auto)
 - `CAR_ID` (BIGINT, FK → CAR.ID, not null)
 - `PROVIDER` (VARCHAR, null ok)
@@ -68,32 +75,57 @@ Implemented features:
 
 Please treat these as production-quality changes: add validation, return proper HTTP status codes, and include minimal tests.
 
-### A) Change existing code: Enforce policy end dates
+### A) Change existing code: Enforce policy end dates - DONE
 
 Ensure all insurance policies have an **end date** and that this is enforced at both:
+
 1. **API/JPA validation level** and
 2. **Database level**
 
 Acceptance criteria:
-- Creating/updating a policy without `endDate` fails with 4xx and a helpful message.
+
+- Creating/updating a policy without `endDate` fails with 4xx an2wd a helpful message.
 - Existing open-ended sample data is fixed (use a default validity period of 1 year for existing policies).
 
-### B) Add new code: Create two new functionalities
+- Added `@NotNull` on `InsurancePolicy.endDate`. - `InsurancePolicy.java`
+
+### B) Add new code: Create two new functionalities - DONE
 
 1. **Register an insurance claim** for a car
-    - Endpoint suggestion: `POST /api/cars/{carId}/claims`
-    - Request body: `claimDate`, `description`, `amount`
-    - Returns created claim with 201 and location header. Validate all fields.
+
+   - Endpoint suggestion: `POST /api/cars/{carId}/claims`
+   - Request body: `claimDate`, `description`, `amount`
+   - Returns created claim with 201 and location header. Validate all fields.
 
 2. **Get the history of a car (regardless of owner)**
-    - Endpoint suggestion: `GET /api/cars/{carId}/history`
-    - Response is a chronological list of relevant events for that car.
+   - Endpoint suggestion: `GET /api/cars/{carId}/history`
+   - Response is a chronological list of relevant events for that car.
 
 Acceptance criteria:
+
 - Clear, documented JSON shapes.
 - Returns 404 when `carId` does not exist.
 
-### C) Add validation: Protect the insurance validity check against invalid values
+- **Endpoint:** `POST /api/cars/{carId}/claims`
+- Validates all fields, returns `201 Created`.
+
+**Files added/modified:**
+
+- `InsuranceClaim.java` (model)
+- `InsuranceClaimRequest`, `InsuranceClaimResponse` (DTOs)
+- `InsuranceClaimService` & `InsuranceClaimServiceImpl`
+- `CarController` (`createClaim()`)
+
+- **Endpoint:** `GET /api/cars/{carId}/history`
+- Returns car info + chronological list of events (policies, claims).
+
+**Files added/modified:**
+
+- `CarHistoryService` & `CarHistoryServiceImpl`
+- `CarEventDto`, `CarHistoryResponse` (DTOs)
+- `CarController` (`getCarHistory()`)
+
+### C) Add validation: Protect the insurance validity check against invalid values - DONE
 
 Harden `GET /api/cars/{carId}/insurance-valid`:
 
@@ -102,7 +134,18 @@ Harden `GET /api/cars/{carId}/insurance-valid`:
 - Reject **impossible** dates (e.g., outside supported ranges) with **400**.
 - Add tests for these cases.
 
-### D) Add a cron that logs within 1 hour after a policy expires
+- Added validations:
+  - `carId` must exist → `CarNotFoundException` → 404
+  - Date parsed & validated via `DateParserService` → 400 on errors
+  - Out-of-range dates rejected.
+
+**Files added/modified:**
+
+- `DateParserService` & `DateParserServiceImpl`
+- `CarController` (`isInsuranceValid()` updated)
+- `GlobalExceptionHandler` for `InvalidDateException`.
+
+### D) Add a cron that logs within 1 hour after a policy expires - DONE
 
 - Enable scheduling and implement a scheduled task that runs periodically.
 - The task should log a message **at most 1 hour after** a policy’s `endDate` passes (e.g., “Policy {id} for car {carId} expired on {endDate}”).
@@ -110,10 +153,38 @@ Harden `GET /api/cars/{carId}/insurance-valid`:
 - Make sure repeated runs do **not** spam logs for the same policy.
 
 Acceptance criteria:
+
 - When a policy expires, a log line appears once within an hour of expiry.
+
+- Added `expiredLogged` field to `InsurancePolicy`.
+- Created scheduled job: `PolicyExpirationLoggerImpl.logAndMarkExpiredPolicies()`
+- Logs once within 1h after `endDate`.
+
+**Files added/modified:**
+
+- `PolicyExpirationLogger` (interface)
+- `PolicyExpirationLoggerImpl` (service)
+- `ClockConfig` (`@Bean Clock`)
+- `CarInsuranceApplication` (`@EnableScheduling`)
 
 ## 6) Expectations
 
 - Have code committed to Github in your private repository. It will be shown and discussed at the technical discussion.
 
 **Good luck — and have fun!**
+
+## 7) Added Tests
+
+- **Controller:** `CarControllerIT` (tests all endpoints: `/cars`, `/insurance-valid`, `/claims`, `/history`).
+- **Services:**
+  - `CarHistoryServiceImplTest`
+  - `CarServiceImplTest`
+  - `CarValidatorServiceImplTest`
+  - `DateParserServiceImplTest`
+  - `InsuranceClaimServiceImplTest`
+  - `InsurancePolicyServiceImplTest`
+  - `InsuranceValidatorServiceImplTest`
+- **Cron & repo:**
+  - `PolicyExpirationLoggerUnitTest`
+  - `PolicyExpirationLoggerIT`
+  - `RepoExpiredUnloggedTest`
