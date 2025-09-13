@@ -40,6 +40,9 @@ public class InsuranceClaim {
     public Long getId() { return id; }
     public Car getCar() { return car; }
     public LocalDate getClaimDate() { return claimDate; }
+    public void setClaimDate(LocalDate claimDate) { this.claimDate = claimDate; }
+    public void setDescription(String description) { this.description = description; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getDescription() { return description; }
     public BigDecimal getAmount() { return amount; }
 }

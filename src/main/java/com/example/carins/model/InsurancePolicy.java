@@ -25,7 +25,7 @@ public class InsurancePolicy {
     @NotNull(message = "End date is required")
     private LocalDate endDate;
 
-    @Column(name = "expired_logged")
+    @Column(name = "expired_logged", nullable = false)
     private boolean expiredLogged = false;
 
     public InsurancePolicy() {}
