@@ -26,6 +26,7 @@ public class Car {
         this.vin = vin; this.make = make; this.model = model; this.yearOfManufacture = yearOfManufacture; this.owner = owner;
     }
 
+    public void setId(Long id) { this.id = id; }
     public Long getId() { return id; }
     public String getVin() { return vin; }
     public void setVin(String vin) { this.vin = vin; }

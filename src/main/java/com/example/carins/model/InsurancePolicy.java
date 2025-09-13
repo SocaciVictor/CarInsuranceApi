@@ -25,11 +25,15 @@ public class InsurancePolicy {
     @NotNull(message = "End date is required")
     private LocalDate endDate;
 
+    @Column(name = "expired_logged")
+    private boolean expiredLogged = false;
+
     public InsurancePolicy() {}
     public InsurancePolicy(Car car, String provider, LocalDate startDate, LocalDate endDate) {
         this.car = car; this.provider = provider; this.startDate = startDate; this.endDate = endDate;
     }
 
+    public void setId(Long id) { this.id = id; }
     public Long getId() { return id; }
     public Car getCar() { return car; }
     public void setCar(Car car) { this.car = car; }
@@ -39,4 +43,6 @@ public class InsurancePolicy {
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public boolean isExpiredLogged() { return expiredLogged; }
+    public void setExpiredLogged(boolean expiredLogged) { this.expiredLogged = expiredLogged; }
 }
