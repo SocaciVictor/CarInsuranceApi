@@ -33,12 +33,10 @@ public class CarHistoryServiceImpl implements CarHistoryService {
 
     @Override
     public CarHistoryResponse getHistory(Long carId) {
-        if (!carRepo.existsById(carId)) {
-            throw new CarNotFoundException(carId);
-        }
+        var car = carRepo.findById(carId)
+                .orElseThrow(() -> new CarNotFoundException(carId));
 
         List<CarEventDto> events = new ArrayList<>();
-
         for (InsurancePolicy p : policyRepo.findByCarId(carId)) {
             events.add(new CarEventDto(
                     CarEventType.POLICY_START,
@@ -65,6 +63,16 @@ public class CarHistoryServiceImpl implements CarHistoryService {
 
         events.sort(Comparator.comparing(CarEventDto::date));
 
-        return new CarHistoryResponse(carId, events);
+        return new CarHistoryResponse(
+                car.getId(),
+                car.getVin(),
+                car.getMake(),
+                car.getModel(),
+                car.getYearOfManufacture(),
+                car.getOwner().getId(),
+                car.getOwner().getName(),
+                events
+        );
     }
+
 }
